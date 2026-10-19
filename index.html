@@ -1,0 +1,286 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Smart Space</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 18px;
+  font-family: Arial, sans-serif;
+  background: #101827;
+  color: white;
+}
+
+header {
+  text-align: center;
+  padding: 20px 0;
+}
+
+header h1 {
+  color: #62d9ff;
+  font-size: 30px;
+}
+
+.card {
+  background: #202d42;
+  padding: 18px;
+  margin: 18px 0;
+  border-radius: 15px;
+}
+
+input, textarea, button {
+  width: 100%;
+  padding: 13px;
+  margin: 7px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+button {
+  background: #62d9ff;
+  color: #101827;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.secondary {
+  background: #394963;
+  color: white;
+}
+
+.saved {
+  overflow-wrap: anywhere;
+  padding: 12px 0;
+  border-bottom: 1px solid #526078;
+}
+
+.saved pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.small {
+  width: auto;
+  padding: 8px 12px;
+  margin-right: 5px;
+}
+
+footer {
+  text-align: center;
+  color: #b9c6d8;
+  padding: 20px 0;
+}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>🚀 My Smart Space</h1>
+  <p>Search • Code • Save</p>
+</header>
+
+<div class="card">
+  <h2>🔎 Search & Save</h2>
+  <form id="searchForm">
+    <input id="searchInput"
+      placeholder="What do you want to search?"
+      required>
+    <button type="submit">Save Search</button>
+  </form>
+  <div id="searchHistory"></div>
+</div>
+
+<div class="card">
+  <h2>💻 My Programs</h2>
+  <input id="programName" placeholder="Program name">
+  <textarea id="programCode"
+    placeholder="Paste your Python or C code here"></textarea>
+  <button id="saveProgram">Save Program</button>
+  <div id="programHistory"></div>
+</div>
+
+<div class="card">
+  <h2>📝 My Notes</h2>
+  <textarea id="noteInput"
+    placeholder="Write your notes here"></textarea>
+  <button id="saveNote">Save Note</button>
+  <div id="noteHistory"></div>
+</div>
+
+<footer>
+  My Smart Space © 2026
+</footer>
+
+<script>
+const getData = key => {
+  try {
+    return JSON.parse(localStorage.getItem(key) || "[]");
+  } catch {
+    return [];
+  }
+};
+
+let searches = getData("mss_searches");
+let programs = getData("mss_programs");
+let notes = getData("mss_notes");
+
+function store(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    return true;
+  } catch {
+    alert("Storage full or unavailable. Please copy your data.");
+    return false;
+  }
+}
+
+function makeButton(label, action, index) {
+  const button = document.createElement("button");
+  button.className = "secondary small";
+  button.textContent = label;
+  button.addEventListener("click", () => action(index));
+  return button;
+}
+
+function renderSearches() {
+  const area = document.getElementById("searchHistory");
+  area.replaceChildren();
+
+  searches.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "saved";
+    row.append(document.createTextNode(item));
+
+    row.append(makeButton("Search again", i => {
+      document.getElementById("searchInput").value = searches[i];
+    }, index));
+
+    row.append(makeButton("Delete", i => {
+      searches.splice(i, 1);
+      if (store("mss_searches", searches)) renderSearches();
+    }, index));
+
+    area.append(row);
+  });
+}
+
+function renderPrograms() {
+  const area = document.getElementById("programHistory");
+  area.replaceChildren();
+
+  programs.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "saved";
+
+    const title = document.createElement("b");
+    title.textContent = item.name;
+    row.append(title);
+
+    const code = document.createElement("pre");
+    code.textContent = item.code;
+    row.append(code);
+
+    row.append(makeButton("Open", i => {
+      document.getElementById("programName").value = programs[i].name;
+      document.getElementById("programCode").value = programs[i].code;
+    }, index));
+
+    row.append(makeButton("Delete", i => {
+      programs.splice(i, 1);
+      if (store("mss_programs", programs)) renderPrograms();
+    }, index));
+
+    area.append(row);
+  });
+}
+
+function renderNotes() {
+  const area = document.getElementById("noteHistory");
+  area.replaceChildren();
+
+  notes.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "saved";
+    row.textContent = item;
+
+    row.append(makeButton("Delete", i => {
+      notes.splice(i, 1);
+      if (store("mss_notes", notes)) renderNotes();
+    }, index));
+
+    area.append(row);
+  });
+}
+
+document.getElementById("searchForm").addEventListener("submit", event => {
+  event.preventDefault();
+  const value = document.getElementById("searchInput").value.trim();
+  if (!value) return;
+
+  searches.unshift(value);
+  if (store("mss_searches", searches)) {
+    document.getElementById("searchInput").value = "";
+    renderSearches();
+  } else {
+    searches.shift();
+  }
+});
+
+document.getElementById("saveProgram").addEventListener("click", () => {
+  const name = document.getElementById("programName").value.trim();
+  const code = document.getElementById("programCode").value.trim();
+
+  if (!name || !code) {
+    alert("Enter the program name and code first.");
+    return;
+  }
+
+  programs.unshift({ name, code });
+  if (store("mss_programs", programs)) {
+    document.getElementById("programName").value = "";
+    document.getElementById("programCode").value = "";
+    renderPrograms();
+    alert("Program saved!");
+  } else {
+    programs.shift();
+  }
+});
+
+document.getElementById("saveNote").addEventListener("click", () => {
+  const value = document.getElementById("noteInput").value.trim();
+  if (!value) {
+    alert("Write a note first.");
+    return;
+  }
+
+  notes.unshift(value);
+  if (store("mss_notes", notes)) {
+    document.getElementById("noteInput").value = "";
+    renderNotes();
+    alert("Note saved!");
+  } else {
+    notes.shift();
+  }
+});
+
+renderSearches();
+renderPrograms();
+renderNotes();
+</script>
+</body>
+  </html>
+  
